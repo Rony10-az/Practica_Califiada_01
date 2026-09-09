@@ -1,0 +1,26 @@
+# Dockerfile optimizado - una sola etapa, pero con buenas practicas:
+#  - imagen base "slim" (mucho mas liviana que python:3.12 completa)
+#  - capas ordenadas para aprovechar la cache de Docker (dependencias antes que el codigo)
+#  - instalacion de pip sin cache para reducir el tamano final
+#  - usuario no root para ejecutar la aplicacion
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Dependencias de Python en su propia capa: solo se reinstalan si requirements.txt cambia
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Codigo de la aplicacion
+COPY app.py .
+COPY templates/ templates/
+
+# Usuario sin privilegios de root; /app/data guarda el Excel generado en tiempo de ejecucion
+RUN useradd --create-home appuser && \
+    mkdir -p /app/data && \
+    chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 5000
+
+CMD ["python", "app.py"]

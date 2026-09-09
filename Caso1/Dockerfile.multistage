@@ -1,0 +1,41 @@
+# Dockerfile multistage - separa la etapa de construccion de la etapa final de ejecucion,
+# de forma que herramientas de compilacion (gcc, headers, etc.) no viajen en la imagen final.
+
+# ---------- Etapa 1: builder ----------
+FROM python:3.12-slim AS builder
+
+WORKDIR /app
+
+# Herramientas de compilacion solo necesarias para instalar dependencias con extensiones nativas
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+# Se instalan las dependencias en /install para copiarlas limpias a la etapa final
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# ---------- Etapa 2: runtime ----------
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# ffmpeg si se necesita en tiempo de ejecucion (union de audio/video), sin compiladores
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ffmpeg && \
+    rm -rf /var/lib/apt/lists/*
+
+# Se copian unicamente las dependencias ya instaladas, no las herramientas de build
+COPY --from=builder /install /usr/local
+
+COPY app.py .
+COPY templates/ templates/
+
+RUN useradd --create-home appuser && \
+    mkdir -p /app/downloads && \
+    chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 5000
+
+CMD ["python", "app.py"]

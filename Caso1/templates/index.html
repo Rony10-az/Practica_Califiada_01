@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Descargador de Videos</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%2338bdf8'/%3E%3Cpath d='M12 5v9m0 0l-3.5-3.5M12 14l3.5-3.5M6 17h12' stroke='%230f172a' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      --bg: #0b1220;
+      --bg-glow-1: #1d4ed8;
+      --bg-glow-2: #7c3aed;
+      --card: #141b2e;
+      --card-border: #232b42;
+      --field: #0f1626;
+      --text: #e8ecf6;
+      --muted: #8b95ab;
+      --accent: #38bdf8;
+      --accent-dark: #0ea5e9;
+      --danger-bg: #3a1420;
+      --danger-text: #fca5b0;
+      --danger-border: #5c1e2e;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: var(--bg);
+      background-image:
+        radial-gradient(560px circle at 12% -10%, color-mix(in srgb, var(--bg-glow-1) 28%, transparent), transparent 60%),
+        radial-gradient(560px circle at 105% 10%, color-mix(in srgb, var(--bg-glow-2) 24%, transparent), transparent 60%);
+      background-attachment: fixed;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 36px;
+      max-width: 460px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+    }
+
+    .icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--bg-glow-2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 35%, transparent);
+    }
+    .icon svg { width: 22px; height: 22px; }
+
+    h1 { font-size: 1.5rem; margin: 0 0 6px; letter-spacing: -0.02em; }
+    p.subtitle { color: var(--muted); margin: 0 0 22px; font-size: 0.92rem; line-height: 1.5; }
+
+    .platforms { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--field);
+      border: 1px solid var(--card-border);
+      color: var(--muted);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    .badge .dot { font-size: 0.9rem; line-height: 1; }
+    .badge.active {
+      border-color: var(--accent);
+      color: var(--text);
+      background: color-mix(in srgb, var(--accent) 16%, var(--field));
+    }
+
+    form { position: relative; }
+
+    .field-row { position: relative; margin-bottom: 16px; }
+    input[type="url"] {
+      width: 100%;
+      padding: 13px 84px 13px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      background: var(--field);
+      color: var(--text);
+      font-size: 0.95rem;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input[type="url"]::placeholder { color: #56617a; }
+    input[type="url"]:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+    }
+
+    .paste-btn {
+      position: absolute;
+      right: 6px;
+      top: 6px;
+      bottom: 6px;
+      padding: 0 12px;
+      border: none;
+      border-radius: 7px;
+      background: var(--card-border);
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .paste-btn:hover { background: #2c3557; color: var(--text); }
+
+    button.submit {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      color: #06202e;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: filter 0.15s, transform 0.05s;
+    }
+    button.submit:hover { filter: brightness(1.08); }
+    button.submit:active { transform: scale(0.99); }
+    button.submit:disabled { cursor: not-allowed; filter: grayscale(0.3) brightness(0.9); }
+
+    .spinner {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      border: 2px solid rgba(6,32,46,0.35);
+      border-top-color: #06202e;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    button.submit.loading .spinner { display: inline-block; }
+    button.submit.loading .btn-label::after { content: "Descargando..."; }
+    button.submit.loading .btn-label { font-size: 0; }
+    button.submit.loading .btn-label::after { font-size: 0.95rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .flash {
+      background: var(--danger-bg);
+      border: 1px solid var(--danger-border);
+      color: var(--danger-text);
+      padding: 11px 14px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+
+    .note {
+      margin-top: 22px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.5;
+      border-top: 1px solid var(--card-border);
+      padding-top: 16px;
+    }
+
+    @media (max-width: 420px) {
+      .card { padding: 26px; border-radius: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 4v11m0 0l-4-4m4 4l4-4M5 18h14" stroke="#06202e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h1>Descargador de Videos</h1>
+    <p class="subtitle">Pega el enlace de un video y descárgalo en formato MP4.</p>
+
+    <div class="platforms" id="platforms">
+      <span class="badge" data-domains="youtube.com,youtu.be"><span class="dot">🎬</span> YouTube</span>
+      <span class="badge" data-domains="instagram.com"><span class="dot">📸</span> Instagram</span>
+      <span class="badge" data-domains="tiktok.com"><span class="dot">🎵</span> TikTok</span>
+      <span class="badge" data-domains="facebook.com,fb.watch"><span class="dot">👍</span> Facebook</span>
+      <span class="badge" data-domains="linkedin.com"><span class="dot">💼</span> LinkedIn</span>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+          <div class="flash">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form action="{{ url_for('download') }}" method="post" id="download-form">
+      <div class="field-row">
+        <input type="url" name="url" id="url-input" placeholder="https://..." autocomplete="off" required>
+        <button type="button" class="paste-btn" id="paste-btn">Pegar</button>
+      </div>
+      <button type="submit" class="submit" id="submit-btn">
+        <span class="spinner"></span>
+        <span class="btn-label">Descargar video</span>
+      </button>
+    </form>
+
+    <p class="note">
+      Usa esta herramienta solo con contenido propio o con autorización del titular de los derechos.
+      Algunas plataformas (Instagram, Facebook, LinkedIn) pueden requerir que el video sea público.
+    </p>
+  </div>
+
+  <script>
+    const urlInput = document.getElementById('url-input');
+    const badges = document.querySelectorAll('#platforms .badge');
+    const form = document.getElementById('download-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const pasteBtn = document.getElementById('paste-btn');
+
+    function highlightPlatform() {
+      const value = urlInput.value.toLowerCase();
+      badges.forEach((badge) => {
+        const domains = badge.dataset.domains.split(',');
+        badge.classList.toggle('active', domains.some((d) => value.includes(d)));
+      });
+    }
+
+    urlInput.addEventListener('input', highlightPlatform);
+
+    pasteBtn.addEventListener('click', async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          urlInput.value = text.trim();
+          highlightPlatform();
+          urlInput.focus();
+        }
+      } catch (err) {
+        urlInput.focus();
+      }
+    });
+
+    form.addEventListener('submit', () => {
+      submitBtn.disabled = true;
+      submitBtn.classList.add('loading');
+    });
+  </script>
+</body>
+</html>
