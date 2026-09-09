@@ -1,7 +1,8 @@
 # Caso 2 - Registro de Miembros de Mesa (ONPE)
 
 Aplicación web simple en Python (Flask + `openpyxl`) para registrar en un Excel los datos de
-miembros de mesa: DNI, ubicación (región/provincia/distrito) y dirección del local de votación.
+miembros de mesa: DNI, nombre completo, si es miembro de mesa (Sí/No), ubicación
+(región/provincia/distrito) y dirección del local de votación.
 
 ## Paso 1: verificar si eres miembro de mesa (manual, fuera de la app)
 
@@ -92,4 +93,8 @@ desde el botón "Descargar Excel".
 - El archivo `data/miembros_mesa.xlsx` se crea automáticamente con los encabezados la primera vez
   que arranca la aplicación.
 - El DNI se valida como 8 dígitos numéricos antes de registrarse.
+- En la tabla de registros, "Miembro de mesa" se muestra como una etiqueta verde (Sí) o roja (No).
 - No compartas el Excel generado ni lo subas a un repositorio público: contiene datos personales (DNIs).
+- Si ya tienes un contenedor corriendo con una versión anterior de la imagen, los cambios de código
+  no aparecen ahí solos: hay que reconstruir la imagen (`docker build ...`) y volver a correr el
+  contenedor para verlos reflejados en `http://localhost:5000`.

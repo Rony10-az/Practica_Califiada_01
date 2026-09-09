@@ -12,7 +12,16 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 EXCEL_PATH = os.path.join(DATA_DIR, "miembros_mesa.xlsx")
 
-HEADERS = ["DNI", "Región", "Provincia", "Distrito", "Dirección del local de votación", "Registrado"]
+HEADERS = [
+    "DNI",
+    "Nombre completo",
+    "Miembro de mesa",
+    "Región",
+    "Provincia",
+    "Distrito",
+    "Dirección del local de votación",
+    "Registrado",
+]
 
 
 def get_workbook() -> Workbook:
@@ -40,12 +49,14 @@ def index():
 @app.route("/registrar", methods=["POST"])
 def registrar():
     dni = request.form.get("dni", "").strip()
+    nombre = request.form.get("nombre", "").strip()
+    miembro_mesa = request.form.get("miembro_mesa", "").strip()
     region = request.form.get("region", "").strip()
     provincia = request.form.get("provincia", "").strip()
     distrito = request.form.get("distrito", "").strip()
     direccion = request.form.get("direccion", "").strip()
 
-    if not (dni and region and provincia and distrito and direccion):
+    if not (dni and nombre and miembro_mesa and region and provincia and distrito and direccion):
         flash("Completa todos los campos.")
         return redirect(url_for("index"))
 
@@ -53,12 +64,27 @@ def registrar():
         flash("El DNI debe tener 8 dígitos numéricos.")
         return redirect(url_for("index"))
 
+    if miembro_mesa not in ("si", "no"):
+        flash("Indica si es miembro de mesa.")
+        return redirect(url_for("index"))
+
+    miembro_mesa_label = "Sí" if miembro_mesa == "si" else "No"
+
     wb = get_workbook()
     ws = wb.active
-    ws.append([dni, region, provincia, distrito, direccion, datetime.now().strftime("%Y-%m-%d %H:%M")])
+    ws.append([
+        dni,
+        nombre,
+        miembro_mesa_label,
+        region,
+        provincia,
+        distrito,
+        direccion,
+        datetime.now().strftime("%Y-%m-%d %H:%M"),
+    ])
     wb.save(EXCEL_PATH)
 
-    flash(f"DNI {dni} registrado correctamente.")
+    flash(f"{nombre} (DNI {dni}) registrado correctamente.")
     return redirect(url_for("index"))
 
 
