@@ -139,6 +139,51 @@
       box-shadow: 0 0 0 3px rgba(200,16,46,0.14);
     }
 
+    /* ---------- Extraccion desde ONPE ---------- */
+    .onpe-box {
+      background: var(--field);
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 24px;
+    }
+    .onpe-box summary { font-size: 0.85rem; font-weight: 700; color: var(--navy); cursor: pointer; }
+    .onpe-box textarea {
+      width: 100%;
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      font-size: 0.82rem;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      resize: vertical;
+      min-height: 90px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .onpe-box textarea:focus {
+      outline: none;
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px rgba(200,16,46,0.14);
+    }
+    button.ghost {
+      margin-top: 10px;
+      padding: 10px 16px;
+      border-radius: 9px;
+      border: 1px solid var(--navy);
+      background: transparent;
+      color: var(--navy);
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    button.ghost:hover { background: var(--navy); color: #fff; }
+    .extraer-msg { margin: 10px 0 0; font-size: 0.8rem; font-weight: 600; }
+    .extraer-msg.success { color: var(--green); }
+    .extraer-msg.error { color: var(--danger-text); }
+
     button.submit, a.download {
       width: 100%;
       padding: 13px;
@@ -257,6 +302,17 @@
           {% endif %}
         {% endwith %}
 
+        <details class="onpe-box">
+          <summary>¿Ya hiciste la consulta en ONPE? Pega la respuesta y autocompleta el formulario</summary>
+          <label for="onpe_json" style="margin-top: 12px;">
+            Forma rápida: en la página de resultado de ONPE, Ctrl+A y Ctrl+C (selecciona y copia todo),
+            y pega aquí. También acepta el JSON de DevTools (Network → Response) si lo prefieres.
+          </label>
+          <textarea id="onpe_json" placeholder="Pega aquí el resultado de ONPE (texto de la página o JSON)"></textarea>
+          <button type="button" class="ghost" id="extraer_btn">Extraer datos</button>
+          <p id="extraer_msg" class="extraer-msg"></p>
+        </details>
+
         <form action="{{ url_for('registrar') }}" method="post">
           <div class="grid">
             <div class="field-row">
@@ -353,5 +409,50 @@
       </div>
     </div>
   </main>
+
+  <script>
+    document.getElementById('extraer_btn').addEventListener('click', async () => {
+      const texto = document.getElementById('onpe_json').value.trim();
+      const msg = document.getElementById('extraer_msg');
+      msg.textContent = '';
+      msg.className = 'extraer-msg';
+
+      if (!texto) {
+        msg.textContent = 'Pega el JSON de la respuesta antes de extraer.';
+        msg.className = 'extraer-msg error';
+        return;
+      }
+
+      try {
+        const res = await fetch('{{ url_for("extraer") }}', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'texto=' + encodeURIComponent(texto),
+        });
+        const data = await res.json();
+
+        if (!data.success) {
+          msg.textContent = data.error || 'No se pudo extraer la información.';
+          msg.className = 'extraer-msg error';
+          return;
+        }
+
+        const c = data.campos;
+        document.getElementById('dni').value = c.dni;
+        document.getElementById('nombre').value = c.nombre;
+        document.getElementById('miembro_mesa').value = c.miembro_mesa;
+        document.getElementById('region').value = c.region;
+        document.getElementById('provincia').value = c.provincia;
+        document.getElementById('distrito').value = c.distrito;
+        document.getElementById('direccion').value = c.direccion;
+
+        msg.textContent = 'Datos extraídos. Revisa los campos y presiona "Registrar".';
+        msg.className = 'extraer-msg success';
+      } catch (err) {
+        msg.textContent = 'Error al conectar con el servidor.';
+        msg.className = 'extraer-msg error';
+      }
+    });
+  </script>
 </body>
 </html>

@@ -45,11 +45,30 @@ docker images descargador-videos
 
 ## Ejecutar un contenedor
 
+Para una prueba rápida y descartable:
+
 ```bash
 docker run --rm -p 5000:5000 descargador-videos:multistage
 ```
 
+Para dejarlo corriendo de forma persistente (se reinicia solo si se cae o si reinicias Docker/el PC, pero no si tú lo detienes a mano):
+
+```bash
+docker run -d --name descargador-app -p 5000:5000 --restart unless-stopped descargador-videos:multistage
+```
+
+> `--restart` y `--rm` son incompatibles (uno reinicia el contenedor, el otro lo borra al salir), por eso no se usan juntos.
+
 Luego abrir `http://localhost:5000` en el navegador.
+
+Comandos útiles para administrarlo:
+
+```bash
+docker ps --filter "name=descargador-app"     # ver si esta corriendo
+docker logs -f descargador-app                # ver logs en vivo
+docker stop descargador-app                   # detenerlo (no se reinicia solo tras esto)
+docker rm descargador-app                     # eliminarlo definitivamente
+```
 
 ## Diferencias entre los 3 Dockerfiles
 
